@@ -21,13 +21,8 @@ pip install djangorestframework
 To clone this project you will need to add Secret key and Database to the 'settings.py' file
 
 ## Generating a secret key
-To generate a scerete key run this commands, and make sure that you are in your project directory 'ToDoApp\myBackEnd':
+To generate a scerete key you can run the file 'secretKeyGenerator.py', it will generate for you in the console a secret key.
 
-```
-py manage.py shell
-from django.core.management.utils import get_random_secret_key 
-get_random_secret_key()  
-```
 
 Then you can add the generated secret key in your settings.py file:
 ```
