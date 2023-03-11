@@ -5,11 +5,12 @@ from .models import *
 from .serializers import *
 from rest_framework.response import Response
 
+
 def home(request):
     return HttpResponse('working ..')
 
 
-class taskApiView(APIView):
+class TaskApiView(APIView):
     def post(self, request):
         data = request.data
         serializer = TaskSerializer(data=data)
