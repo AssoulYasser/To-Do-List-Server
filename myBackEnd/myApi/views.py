@@ -13,7 +13,6 @@ def home(request):
 class TaskApiView(APIView):
     def post(self, request):
         data = request.data
-        print(data)
         serializer = TaskSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -25,21 +24,20 @@ class TaskApiView(APIView):
         serializer = TaskSerializer(data, many=True)
         if data:
             return Response(serializer.data, status=200)
-        return Response("No Data", status=400)
+        return Response(serializer.errors, status=400)
 
     def put(self, request):
         id = request.data['id']
-
         try:
             oldData = Task.objects.get(id=id)
         except:
-            return Response({"error": "NotFound"}, status=400)
+            return Response(status=400)
 
         serializer = TaskSerializer(oldData, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=200)
-        return Response({"error": serializer.errors}, status=400)
+        return Response(status=400)
 
     def delete(self, request):
         id = request.query_params.get('id')
