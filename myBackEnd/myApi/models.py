@@ -1,11 +1,14 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 
-class User(models.Model):
+class User(AbstractUser):
     username = models.CharField(max_length=15, primary_key=True)
-    password = models.CharField(max_length=16)
+    password = models.TextField()
     email = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []
 
 
 class Task(models.Model):
@@ -13,3 +16,4 @@ class Task(models.Model):
     description = models.TextField(blank=False, null=False)
     time = models.TimeField(auto_now_add=False)
     isDone = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
