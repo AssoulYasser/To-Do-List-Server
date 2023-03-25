@@ -2,7 +2,8 @@ import traceback
 from datetime import timedelta
 
 import jwt
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
+from jwt import InvalidSignatureError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -16,9 +17,26 @@ def home(request):
     return HttpResponse('working ..')
 
 
+def getUser(token: str):
+    if not token:
+        return Response({"ERROR": "NO TOKEN PASSED"}, status=400)
+    try:
+        payload = jwt.decode(token, 'secretkey', algorithms=['HS256'])
+    except InvalidSignatureError:
+        return Response({"ERROR": "TOKEN HAS EXPIRED"}, status=400)
+
+    username = payload['username']
+    return username
+
+
 class TaskApiView(APIView):
     def post(self, request):
-        data = request.data
+        username = getUser(request.headers.get('Authorization'))
+        user = User.objects.get(username=username)
+        received = request.data
+        data = QueryDict(mutable=True)
+        data.update(received)
+        data.update({'user': user})
         serializer = TaskSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -26,34 +44,63 @@ class TaskApiView(APIView):
         return Response(serializer.errors, status=400)
 
     def get(self, request):
-        data = Task.objects.all()
-        serializer = TaskSerializer(data, many=True)
-        if data:
+        try:
+            username = getUser(request.headers.get('Authorization'))
+            user = User.objects.get(username=username)
+            tasks = Task.objects.filter(user=user)
+            serializer = TaskSerializer(tasks, many=True)
             return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        except Exception as e:
+            return Response({"ERROR": str(e)})
 
     def put(self, request):
-        id = request.data['id']
         try:
-            oldData = Task.objects.get(id=id)
-        except:
-            return Response(status=400)
+            id = request.data['id']
 
-        serializer = TaskSerializer(oldData, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=200)
-        return Response(status=400)
+            username = getUser(request.headers.get('Authorization'))
+            user = User.objects.get(username=username)
+
+            received = request.data
+            data = QueryDict(mutable=True)
+
+            data.update(received)
+            data.update({'user': user})
+
+            task = Task.objects.filter(user=user, id=id).first()
+            if task:
+                serializer = TaskSerializer(task, data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(status=200)
+            else:
+                return Response({"ERROR": "NO TASK FOUND"})
+
+        except Exception as e:
+            return Response({"ERROR": str(e)})
 
     def delete(self, request):
-        id = request.query_params.get('id')
-
         try:
-            data = Task.objects.get(id=id)
-            data.delete()
-            return Response(status=200)
-        except:
-            return Response({"error": "NotFound"}, status=400)
+            id = request.data['id']
+
+            username = getUser(request.headers.get('Authorization'))
+            user = User.objects.get(username=username)
+
+            received = request.data
+            data = QueryDict(mutable=True)
+
+            data.update(received)
+            data.update({'user': user})
+
+            task = Task.objects.filter(user=user, id=id).first()
+
+            if task:
+                task.delete()
+                return Response(status=200)
+            else:
+                return Response({"ERROR": "NO TASK FOUND"})
+
+        except Exception as e:
+            return Response({"ERROR": str(e)})
 
 
 class UserSignInApiView(APIView):
